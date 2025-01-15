@@ -16,15 +16,28 @@
     5) [Next Steps](#Next-Steps)
 
 ## Overview
-The newly announced congestion tax to enter lower Manhattan aims to restrict private vehicular traffic through New York City, but instead will reroute arterial traffic through various less-traveled routes, making commutes from places like Eastern Queens, where there is no real subway access, especially difficult. In order to complement the state's strategy to reduce arterial traffic, we aim to optimize bus routes across the Eastern Queens Transit Desert to provide better access through to the other boroughs and swift subway access, ensuring that highly congested areas receive adequate service.
+The newly announced congestion pricing scheme to enter lower Manhattan aims to restrict private vehicular traffic through New York City, but stands to reroute arterial traffic through various less-traveled routes, making commutes from places like Eastern Queens, where there is no real subway access, especially difficult. In order to complement the state's strategy to reduce arterial traffic, we aim to optimize bus routes across the Eastern Queens Transit Desert to provide better access through to the other boroughs and swift subway access, ensuring that highly congested areas receive adequate service and underserved communities receive the transportation support they need.
 
 ## Data Dictionary
-Route ID - Identifier for the bus route (int)
-Short Name - Easily referred name for the bus route (string)
-Description - A brief description of the route and its endpoints (string)
-Stop ID - Identifer for each given bus stop (int)
-Stop Name - Easily referred name for each stop (string)
-Latitude, Longitude - Coordinates for each stop (float)
+
+This project contains several datasets, most of which fall under the umbrella of "real-time data by bus route." In addition to real time data, we have collected static geographic data, outlining all the bus stops across the 23 bus routes that service the Eastern Queens Transit Desert and two `.geojson` files containing the boundaries for the boroughs of New York City (`borough_boundaries.geojson`) and the neighborhood boundaries for New York City (`nyc_by_neighborhood.geojson`). We leave open the possibility of including population data as well (note for now).
+
+### Static Data
+| Variable | Data Type | Description |
+|---|---|---|
+| Route ID | `string` | Identifier for the bus route |
+| Stop ID | `string` | Identifer for each given bus stop |
+| Stop Name | `string` | Intersection nearest to where the bus stop is placed |
+| Latitude | `float` | Global latitude coordinate for each stop |
+| Longitude | `float` | Global longitude oordinates for each stop |
+
+| Variable | Data Type | Description |
+|---|---|---|
+| Route ID | `string` | Identifier for the bus route |
+| Vehicle ID | `string` | Identifer for each bus operating on each route |
+| Latitude | `float` | Global latitude coordinate for each stop |
+| Longitude | `float` | Global longitude oordinates for each stop |
+| Timestamp | `string` | Time at which the bus was located at the exact coordinates where it appeared (converted to `datetime`) |
 
 ## Requirements
 
