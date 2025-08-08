@@ -135,4 +135,4 @@ This project provides a taste of how can leverage data to improve the New York C
 - Determine the gap in funding to implement each solution.
 
 ### Additional Notes
-There has been significant work toward a Streamlit app to accompany the project that serves the interest of various stakeholders in the Transit Desert problem. The app does not yet work, but will be a continued effort.
+There has been significant work toward a Streamlit app to accompany the project that serves the interests of various stakeholders in the Transit Desert problem. The app does not yet work, but will be a continued effort.
