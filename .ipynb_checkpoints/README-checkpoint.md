@@ -1,5 +1,3 @@
-<img src="http://imgur.com/1ZcRyrc.png" style="float: left; margin: 10px; height: 120px">
-
 # Connecting Queens: Leveraging Data-Driven Insights for Better Transit Planning
 
 *Deval Mehta*
