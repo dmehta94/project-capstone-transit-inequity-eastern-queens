@@ -1,0 +1,35 @@
+# Core data manipulation
+numpy
+pandas
+scipy
+
+# Geospatial analysis
+geopandas
+shapely
+geopy
+
+# Clustering and machine learning
+hdbscan
+scikit-learn
+
+# Network analysis
+networkx
+python-louvain
+
+# Time series modeling
+statsmodels
+
+# Data collection
+requests
+schedule
+
+# Visualization
+matplotlib
+seaborn
+
+# Notebook utilities
+tqdm
+jupyterlab
+
+# Streamlit app (in progress)
+streamlit
