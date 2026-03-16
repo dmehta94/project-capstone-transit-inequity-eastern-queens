@@ -1,136 +1,244 @@
-# Connecting Queens: Leveraging Data-Driven Insights for Better Transit Planning
+# Connecting Queens: Data-Driven Transit Analysis for Eastern Queens
 
-*Deval Mehta*
+*Deval Mehta | General Assembly Data Science Capstone | January 2025*
 
-## Table of Contents
-1) [Overview](#Overview) 
-2) [Data Dictionary](<#Data Dictionary>)
-3) [Requirements](#Requirements)
-4) [Executive Summary](<#Executive Summary>)
-    1) [Purpose](<#Purpose>)
-    2) [Data Handling](<#Data Handling>)
-    3) [Exploration](#Exploration)
-    4) [Analysis](#Analysis)
-    5) [Findings and Implications](<#Findings and Implications>)
-    6) [Next Steps](#Next-Steps)
+**Stack:** Python · GeoPandas · HDBSCAN · NetworkX · Louvain · SARIMA · MTA BusTime API  
+**Data:** 1 week of real-time bus location data · 2,300 static stops across 23 routes
 
-## Overview
-The newly announced congestion pricing scheme to enter lower Manhattan aims to restrict private vehicular traffic through New York City, but stands to reroute arterial traffic through less-traveled routes, making commutes from places such as Eastern Queens, where there is no real subway access, especially difficult. In order to complement the state's strategy to reduce arterial traffic, we must optimize bus routes across the Eastern Queens Transit Desert to provide better access to the other boroughs and swift subway access, ensuring that highly congested areas receive adequate service and underserved communities receive the transportation support they need. Our goal is to characterize the underserved communities and transit hubs of Eastern Queens, so that we may work toward implementing more optimized bus routes in the future, leaving space for expansion of the existing subway system into Eastern Queens.
+---
 
-## Data Dictionary
+## What It Does
 
-This project contains several datasets, most of which fall under the umbrella of "real-time data by bus route." In addition to real time data, we have collected static geographic data, outlining all the bus stops across the 23 bus routes that service the Eastern Queens Transit Desert and two `.geojson` files containing the boundaries for the boroughs of New York City (`borough_boundaries.geojson`) and the neighborhood boundaries for New York City (`nyc_by_neighborhood.geojson`). We leave open the possibility of including population data as well (note for now).
+Connecting Queens analyzes bus service across the Eastern Queens Transit Desert —
+a region of over 400,000 residents with no subway access. Using one week of
+real-time MTA bus location data and static stop infrastructure, the project
+identifies transit hubs and underserved neighborhoods through a combination of
+density-based spatial clustering (HDBSCAN) and graph-based community detection
+(Louvain method). A SARIMA time series model validates that service patterns are
+stable enough to support the clustering results.
 
-### Static Data
-| Feature | Data Type | Description |
-|---|---|---|
-| Route ID | `string` | Identifier for the bus route |
-| Stop ID | `string` | Identifier for each given bus stop |
-| Stop Name | `string` | Intersection nearest to where the bus stop is placed |
-| Latitude | `float` | Global latitude coordinate for each stop |
-| Longitude | `float` | Global longitude oordinates for each stop |
+Of 27 identified communities, 5 qualify as transit hubs and 17 are low-service
+areas — confirming that Eastern Queens is severely underserved even relative to
+its own internal baseline.
 
-### Real-Time Data
-| Feature | Data Type | Description |
-|---|---|---|
-| Route ID | `string` | Identifier for the bus route |
-| Vehicle ID | `string` | Identifier for each bus operating on each route |
-| Latitude | `float` | Global latitude coordinate for each stop |
-| Longitude | `float` | Global longitude coordinate for each stop |
-| Timestamp | `string` | Time at which the bus was located at the exact coordinates where it appeared (converted to `datetime`) |
+---
 
-### Engineered Features
-| Feature | Datatype | Dataset | Description |
-|---|---|---|---|
-| `coords` | `tuple` | `stops_data` | Tuple containing latitude and longitude for each stop. |
-| `hdbscan_cluster` | `int` | `stops_data` | Cluster labels from the HDBSCAN algorithm. |
-| `louvain_community` | `int` | `stops_data` | Community labels from the Louvain method applied to the transit network. |
-| `nearest_stop_id` | `string` | `real_time_data` | The stop ID of the closest static stop to each real-time bus location. |
-| `distance_to_stop` | `float` | `real_time_data` | Distance (in kilometers) between the bus location and its nearest stop. |
-| `Time Gap` | `float` | `real_time_data` | Time difference (in minutes) between consecutive bus records. |
-| `Cluster` | `int` | `louvain_temporal_data` | Temporal cluster labels from HDBSCAN on hourly bus activity. |
-| `Activity Per Stop` | `float` | `service_summary` | Total vehicle activity divided by the total number of stops in a community. |
-| `Activity-to-Stop Ratio`| `float` | `service_summary` | Total bus activity count divided by total stop count for each neighborhood. |
-| `Average Temporal Activity` | `float` | `service_summary` | Average temporal activity of clusters within a Louvain community. |
-| `Bus Activity Count` | `int` | `service_summary` | Total number of bus activity records in a neighborhood or community. |
-| `Stop Count` | `int` | `service_summary` | Total number of stops in a neighborhood or Louvain community. |
-| `weight` | `float` | Transit Network Graph | Inverse distance or frequency of transitions between stops (edge weight). |
+## Why I Built This
 
-## Requirements
+I grew up in Eastern Queens. Getting anywhere without a car meant long waits,
+indirect routes, and the constant awareness that the subway — visible from parts
+of the neighborhood — might as well have been in another city. When I started the
+General Assembly Data Science Bootcamp in late 2024, I knew immediately that this
+was the problem I wanted to work on for my capstone.
 
-### Software
-| Library | Module | Purpose |
-|---|---|---|
-| `os` |  | Execute shell operations in Python. |
-| `requests` |  | Send HTTP requests via Python. |
-| `datetime` |  | Handle datetime objects |
-| `glob` |  | Pattern-match file names to make mass imports easier. |
-| `numpy` |  | Ease of basic aggregate operations on data. |
-| `pandas` |  | Read our data into a DataFrame, clean it, engineer new features, and write it out to submission files. |
-| `collections` | `Collections` | Counting hashable objects more easily. |
-| `tqdm` |  | Display progress bars when running code. |
-| `geopandas` |  | Handle GeoDataFrames, which incorporate geometry into the DataFrames. |
-| `shapely` |  | `geometry` | Import `Point` to introduce compatible geometry for to create a GeoDataFrame. |
-| `geopy` | `distance` | Compute "great circle" distances to employ the haversine metric. |
-| `networkx` |  | Map and study graph-based networks. |
-| `community` |  | Perform community mapping. |
-| `itertools` | `combinatorics` | Produce combinatorial generators to produce edges for graph constructions. |
-| `hdbscan` |  | Perform HDBSCAN modeling. |
-| `scipy` | `spatial` | Import `cKDTree` to produce a KD Tree for quick k-neighbors calculations for clustering. |
-|  | `stats` | Import `pearsonr` to compute the Pearson Correlation Coefficient|
-| `sklearn` | `cluster` | Import `DBSCAN` to perform DBSCAN clustering. |
-|  | `metrics` | Import `silhouette_score` and `root_mean_squared_error` to assess clustering and time-series models, respectively. |
-|  | `neighbors` | Import `NearestNeighbors` to determine the k-nearest neighbors to a point in a space easily. |
-|  | `preprocessing` | Import `StandardScaler` to scale the data prior to HDBSCAN clustering. |
-| `statsmodels` | `tsa` | Import `seasonal.STL` to perform seasonal-trend decomposition and `api.SARIMAX` to predict from time-series data with a SARIMA model. |
-| `matplotlib` | `pyplot` | Basic plotting functionality. |
-|  | `mcolors` | Access options for color map setting. |
-| `seaborn` |  | More control over plots. |
+The timing added urgency. New York City's congestion pricing scheme took effect
+in early 2025, rerouting arterial traffic through exactly the corridors that
+Eastern Queens residents depend on. The MTA's Queens Bus Network Redesign and
+Interborough Express projects promise improvements, but focus primarily on
+western Queens. I wanted to quantify what the data actually shows about eastern
+Queens service — not just assert that it's bad, but measure it.
 
-## Executive Summary
-### Purpose
-The [Queens Bus Network Redesign](https://mta.info/project/queens-bus-network-redesign) and [Interborough Express](https://mta.info/project/interborough-express) projects aim to improve transit access in Queens but focus primarily on improvements in the well-connected Western Queens. Eastern Queens has historically been underserved by public transit, despite the presence of the LIRR rail system. With the onset of the congestion pricing scheme in addition to preexisting issues, residents of the Eastern Queens transit desert require a more supportive transit network to make their way across the city without significant financial and quality of life strain. To diagnose the level of service in the Eastern Queens Transit Desert, we employ two methods of hierarchical clustering (HDBSCAN and [Louvain clustering](https://library.fiveable.me/key-terms/combinatorics/louvain-method)) on real-time data collected over the course of a week and the 
+The project collects its own data via the MTA BusTime SIRI API, clusters stops
+into communities using real-time vehicle movement patterns, and surfaces specific
+neighborhoods where service intensity is lowest relative to infrastructure.
 
-### Data Handling
-We collected real-time data over the course of a week, between the hours of 6:00 AM and 10:00 PM EST. The data here can be considered representative of "a typical week," but does not account for seasonal effects over the course of a month or year. Due to the nature of the data collection process, there was no "missing data," per se, but we do recognize that there were buses running outside of the hours of collection that would have been missed. A more robust analysis would include historical data, as well as "round-the-clock" collection, facilitated by a big-data solution, such as AWS or Azure. There appears to be a set of data points from the Bronx, which we have ignored for this analysis. These likely arose due to a driver who neglected to mark their vehicle as off-route or who needed to take a detour due to some event-related closure.
+---
 
-### Exploration
-Not much could be said about spatial data from summary statistics, except for which bus route is the most well-service (the Q27). For the initial data exploration, we resolved to do the following:
-- Map the static data out and check which neighborhoods have the highest and lowest stop density
-- Perform a similar spatial analysis for buses found throughout the day in each neighborhood
-- Perform a temporal analysis to see when each route was the busiest and which were the most underserviced.
+## What I Learned
 
-Further exploration was performed in preparation for time-series clustering, namely plotting trends and seasonality to verify that the real-time data was amenable to clustering and community-mapping. We also perform a predictive SARIMA model to explore how reliable the seasonality and trends are, with a profile similar to each weekday being generated for the next possible weekday, with an RMSE of 1.67 buses/hour, which indicates relative stability.
+**Technical skills**  
+GeoPandas was entirely new to me coming into this project. Learning to perform
+spatial joins, work with GeoDataFrames, and produce map visualizations at the
+neighborhood level was one of the most rewarding parts of the month. HDBSCAN and
+the Louvain method were also new — understanding how to combine a density-based
+clustering algorithm with a graph-based community detection algorithm to get a
+richer picture than either alone was the analytical core of the project.
 
-### Analysis
-The problem at hand lends itself to unsupervised learning, in a machine learning context. There is no response variable, as we seek to fundamentally determine how the network of 2,300 bus stops across Eastern Queens may be categorized into low-service areas and high-activity transit hubs. We opt here to employ both clustering and network analysis, given the nature of the problem and data. In particular, we opted to employ Hierarchical Density-Based Spatial Clustering of Applications with Noise (HDBSCAN), which converts DBSCAN into a hierarchical clustering algorithm, then extracts a flat clustering based on cluster stability. [We welcome the enthusiastic colleague or student to read more about it here](https://hdbscan.readthedocs.io/en/latest/how_hdbscan_works.html). We also opt to use the Louvain Method, a greedy community-mapping algorithm, which first assigns each node in a graph to its own community, then clusters by maximizing on modularity score. Notably, Louvain is also a hierarchical clustering model. [For more information on the Louvain Method, see here](https://neo4j.com/docs/graph-data-science/current/algorithms/louvain/).
+**Data science insights**  
+Summary statistics tell you almost nothing about spatial data. The Q27 having 153
+stops is interesting, but it takes a map to understand what that means for a
+neighborhood. I learned to lead with visualization when exploring geospatial
+problems, not tables. I also learned the hard way that DBSCAN and PageRank, while
+theoretically appealing, were wrong tools for this problem — DBSCAN's epsilon
+parameter is nearly impossible to tune for geographic data at this scale, and
+PageRank assumes directed graphs, which transit networks are not.
 
-Initially we considered the two separately, as HDBSCAN clusters based on the density of nodes, providing a distance-related heuristic for mapping communities, and Louvain clusters based on modularity. By incorporating time-series data to standardize over the course of a week through a time-series HDBSCAN clustering, then filtering the results into a Louvain model, we were able to account for both. We evaluate our results on multiple metrics, detailed as follows:
+**Software engineering practices**  
+Building a data collection pipeline from scratch — scheduler, per-route collection,
+consolidation — taught me how much can go wrong between an API and a clean
+DataFrame. I also learned to manage 23 parallel DataFrames using a dictionary
+pattern, which made the entire analysis loop far cleaner than handling them as
+separate variables would have been.
 
-- **HDBSCAN**: silhouette score
-- **Louvain**: modularity score, coverage
-- **Temporal HDBSCAN Clustering**: silhouette score
+**Unexpected learnings**  
+The Louvain method's coverage limitation (40% in this case) was initially
+frustrating. Understanding why it happens — nodes with no graph edges simply
+cannot be assigned to communities — turned into one of the most useful
+methodological lessons of the project. It's a reminder that evaluation metrics
+always need interpretation in context, not just comparison to a benchmark.
 
-Silhouette score and modularity score are effectively the same metric: both measure how similar points within a cluster are to each other and how distinct the clusters formed are from each other, on a scale of -1 to 1, where -1 means there is no strong clustering and 1 means the clusters are perfectly distinct.
+**Design decisions**  
+I chose HDBSCAN over KMeans or standard DBSCAN because it doesn't require
+specifying the number of clusters or an epsilon parameter — both of which are
+difficult to justify a priori for geographic stop data. I chose Louvain over
+Leiden (a more recent alternative) because Louvain is better documented and
+easier to explain in an interview context, and the known limitations of Louvain
+(non-overlapping communities, resolution limit) are not disqualifying for this
+use case. I would try Leiden in a future iteration.
 
-### Findings and Implications
-Prior to accounting for real-time data, our HDBSCAN model performed with a silhouette score of 0.246. This indicates moderately strong density-based clusters, but not terribly strong ones. Our Louvain model, however, performs with a modularity score of 0.756, indicating strongly defined communities. On the other hand, the Louvain model also only has 40% coverage, meaning that only 40% of our possible network area is covered.
+---
 
-After incorporating time-series, the silhouette score rises to 0.71, indicating strong, well-defined denisty-based clusters. With strongly defined Louvain communities and density-based clusters, we compute some aggregate statistics to determine which communities are well-serviced and those that are under-served. Of the 27 distinct Louvain-HDB communities mapped, only 5 can be considered well-serviced and most of them are localized to the arterial Union Turnpike and Springfield Boulevard corridors, or to Jamaica, near the Jamaica Train Station. Meanwhile, we identify 17 of 27 communities as low-service areas, which are spread all across Eastern Queens. Both of these categories are determined based whether the community has an average stop activity in the top or bottom 25% of the data and more or less, respectively average temporal activity than the median amount.
+## Quick Start
 
-We conclude thus that Eastern Queens is indeed incredibly underserviced, as suggested by the data, even when isolated from a comparison against the rest of the City. The massive lapse in service between low-service areas and the two transit hubs in Queens leaves commuters in a tenuous situation. We recommend, in the short-term, increasing the frequency on routes directed to underserved neighborhoods. Within the coming months, we'd like to direct resources to improving connectivity by remapping the eastern Queens bus route network to better service all communities. We hope to encourage the MTA as a whole to consider, in the long-term, expanding subway access to the outer borough transit deserts as a whole, to keep our City connected and whole.
+### Requirements
 
-### Next Steps
-This project provides a taste of how can leverage data to improve the New York City transit system. From here, we can take several steps to ensure our commuters have the best possible experience and keep our city moving and green.
+Python 3.11+. An MTA BusTime API key is required for data collection (free at
+[bustime.mta.info](https://bustime.mta.info/wiki/Developers/Index)). Analysis
+can be reproduced without an API key using the data already in `data/`.
 
-- Collect more data more frequently and for a longer period of time to better account for seasonal effects.
-- Collect data across all of Queens to compare Eastern Queens service to Western Queens service.
-- Collect data from routes across the whole City for a more holistic analysis. This immediately becomes a "big data" project and will thus have to be hosted on a service like AWS or Azure.
-- Implement pathfinding algorithms such as minimal spanning trees or [genetic algorithms](https://www.cse.unr.edu/~sushil/class/gas/papers/Using%20a%20Genetic%20Algorithm%20to%20Explore%20A_-like%20Pathfinding%20Algorithms.pdf) to remap the bus network in Eastern Queens and NYC's other transit deserts.
-- Incorporate population data to make more specific recommendations regarding frequency
-- Check Louvain communities against the [Leiden method](https://www.nature.com/articles/s41598-019-41695-z), since Louvain distinctly produces non-overlapping communities. Leiden is more robust and mitigates this issue, as well as the resolution limit of modularity.
-- Perform a similar analysis on subway routes to support a possible extension into eastern Queens and other transit deserts.
-- Determine the gap in funding to implement each solution.
+### Installation
+```bash
+git clone https://github.com/dmehta94/project-capstone-transit-inequity-eastern-queens
+cd project-capstone-transit-inequity-eastern-queens
 
-### Additional Notes
-There has been significant work toward a Streamlit app to accompany the project that serves the interests of various stakeholders in the Transit Desert problem. The app does not yet work, but will be a continued effort.
+python -m venv venv
+source venv/Scripts/activate  # Windows GitBash
+pip install -r requirements.txt
+```
+
+### Collect fresh data (optional)
+```bash
+export MTA_API_KEY='your_key_here'
+python code/static_data_collection.py
+python code/realtime_collection_scheduler.py  # Runs every 30 min — Ctrl+C to stop
+python code/realtime_data_consolidation.py
+```
+
+### Run the analysis
+
+Open JupyterLab and run the notebooks in order:
+```bash
+jupyter lab
+```
+
+1. `code/exploratory_data_analysis.ipynb` — spatial and temporal EDA
+2. `code/analysis.ipynb` — HDBSCAN, Louvain, SARIMA, service summary
+
+---
+
+## Sample Output
+
+The analysis produces the following key visualizations in `images/`:
+
+| Output | Description |
+|---|---|
+| `eastern_queens_stop_density.png` | Stop count per neighborhood heatmap |
+| `average_daily_bus_activity_by_hour_by_route.png` | Hourly activity curves for all 23 routes |
+| `hdbscan_clusters_map.png` | HDBSCAN spatial clusters overlaid on Queens |
+| `louvain_communities_map.png` | Louvain communities from real-time movement data |
+| `hubs_and_lsas_eastern_queens.png` | Transit hubs (blue) and low-service areas (orange) |
+| `activity_to_stop_ratio_heatmap.png` | Service intensity by neighborhood |
+
+---
+
+## Technical Details
+
+### Architecture
+
+The project has three stages:
+
+**Collection** (`static_data_collection.py`, `realtime_data_collection.py`,
+`realtime_collection_scheduler.py`) — pulls stop infrastructure and vehicle
+positions from the MTA BusTime API and writes per-route CSVs.
+
+**Consolidation** (`realtime_data_consolidation.py`) — merges 23 per-route files
+into a single sorted CSV for analysis.
+
+**Analysis** (`exploratory_data_analysis.ipynb`, `analysis.ipynb`) — spatial
+joins, clustering, time series modeling, and service-level classification.
+
+### Key Methods
+
+**HDBSCAN** identifies dense spatial clusters of stops without requiring a fixed
+cluster count or epsilon parameter. A grid search over `min_cluster_size` (50–150)
+and `min_samples` (20–40) selects the configuration with the best silhouette score.
+Spatial silhouette score: **0.246** (stops only) → **0.71** (after temporal
+integration).
+
+**Louvain community detection** builds a weighted graph where edges represent
+consecutive stop visits by the same vehicle. Edge weight is the inverse of
+geographic distance, so closer stops are more strongly connected. Resolution
+parameter set to 2.0 for neighborhood-scale communities. Modularity: **0.756**.
+
+**Temporal HDBSCAN** clusters routes by their hourly activity profiles, then
+merges these temporal labels with the Louvain communities to distinguish
+spatially-connected communities that are temporally inactive from those with
+consistent service throughout the day.
+
+**SARIMA(2,1,2)(1,1,1,24)** forecasts hourly bus activity for a single route,
+validating that daily service patterns are stable enough to support the clustering
+results. RMSE: **1.67 buses/hour**.
+
+### Nearest-Stop Assignment
+
+Real-time vehicle positions are matched to the nearest static stop using a
+`scipy.spatial.cKDTree` — a vectorized k-nearest-neighbor structure that handles
+hundreds of thousands of records efficiently. Coordinates are converted to radians
+for haversine-compatible distance calculations.
+
+### Dependencies
+
+See `requirements.txt`. Key packages: `geopandas`, `hdbscan`, `networkx`,
+`community` (Louvain), `statsmodels`, `scikit-learn`, `requests`, `schedule`.
+
+---
+
+## Limitations
+
+**One week of data.** The analysis characterizes a single week in January 2025.
+Seasonal effects, school calendars, and weather are not captured. A more robust
+analysis would require months of data hosted on a cloud platform like AWS or Azure.
+
+**Daytime collection only.** Data was collected between 6 AM and 10 PM. Overnight
+service gaps are not reflected.
+
+**40% Louvain coverage.** Stops with no graph edges (buses that never visited
+consecutive stops within the collection window) cannot be assigned to communities.
+These stops appear as noise and are excluded from the hub/low-service classification.
+
+**Activity-to-stop ratio as a proxy.** The ratio measures data volume relative to
+infrastructure — not actual passenger load, headway, or on-time performance. It is
+a reasonable first-pass metric but not a substitute for ridership data.
+
+**No comparison to western Queens.** The analysis characterizes eastern Queens
+relative to itself. A comparison against the well-served western Queens network
+would strengthen the equity argument.
+
+---
+
+## Next Steps
+
+- Extend data collection to 4–6 weeks across multiple seasons
+- Collect data across all of Queens for a direct east/west comparison
+- Implement pathfinding algorithms (minimum spanning tree, genetic algorithms)
+  to propose optimized route remappings
+- Incorporate population and ridership data for passenger-weighted analysis
+- Complete the Streamlit dashboard (in progress — see `code/transit_analysis_app.py`)
+- Evaluate Leiden method as a more robust alternative to Louvain
+
+---
+
+## Credits
+
+Data collection and analysis by Deval Mehta. Code cleanup and debugging assisted
+by GPT-4 (OpenAI) and Claude (Anthropic). Real-time and static bus data from the
+[MTA BusTime API](https://bustime.mta.info/wiki/Developers/Index). Geographic
+boundary data from [NYC Open Data](https://opendata.cityofnewyork.us/).
+
+---
+
+## License
+
+MIT License. See `LICENSE` for details.
+
+**Contact:** [github.com/dmehta94](https://github.com/dmehta94)
