@@ -26,10 +26,10 @@ its own internal baseline.
 ## Why I Built This
 
 I grew up in Eastern Queens. Getting anywhere without a car meant long waits,
-indirect routes, and the constant awareness that the subway — visible from parts
-of the neighborhood — might as well have been in another city. When I started the
-General Assembly Data Science Bootcamp in late 2024, I knew immediately that this
-was the problem I wanted to work on for my capstone.
+indirect routes, and the constant awareness that the subway might as well have 
+been in another city. When I started the General Assembly Data Science Bootcamp
+in late 2024, I knew a transit problem would be a fantastic candidate for my
+capstone project.
 
 The timing added urgency. New York City's congestion pricing scheme took effect
 in early 2025, rerouting arterial traffic through exactly the corridors that
